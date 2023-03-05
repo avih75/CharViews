@@ -1,0 +1,29 @@
+﻿<!DOCTYPE html>
+<html lang="en" style="height:100%">
+
+<head>
+    <meta charset="utf-8" />
+    <script src="scripts/VSS.SDK.min.js"></script>
+    <title>Action Button Control</title>
+    <link rel="stylesheet" href="styles/style.css" type="text/css" />
+</head>
+
+<body style="height:100%">
+
+</body>
+<script>
+    VSS.init({
+        explicitNotifyLoaded: true,
+        usePlatformScripts: true,
+        usePlatformStyles: true,
+        configureModuleLoader: true,
+        applyTheme: true
+    });
+
+    VSS.require(["scripts/app"], function() {
+        VSS.notifyLoadSucceeded();
+    });
+    VSS.resize();
+</script>
+
+</html>

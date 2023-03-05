@@ -1,0 +1,16 @@
+// A task runner configuration.
+{
+    "version": "2.0.0",
+    "command": "grunt",
+    "tasks": [
+        {
+            "label": "grunt",
+            "type": "grunt",
+            "problemMatcher": [],
+            "group": {
+                "_id": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}
