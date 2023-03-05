@@ -2,26 +2,29 @@ import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers");
 
 let WidgetConfigurationContext: any;
 
-VSS.register("ActionButtonWidget.Configuration", function () {
-    let $addNewButton = $("#addNewButton");
+VSS.register("ChartViewsWidget.Configuration", function () {
+    let $SeletModel = $("#ModelList");
+    let $MonthsBack = $("#MonthsBack");
+    let $MonthsForword = $("#MonthsForword");
+    $SeletModel.change((eventObject: JQueryEventObject) => {                
+        UpdateConfigurations();
+    });
     return {
         load: function (widgetSettings, widgetConfigurationContext) {
             WidgetConfigurationContext = widgetConfigurationContext;
             let settings = JSON.parse(widgetSettings.customSettings.data);
-            if (settings && settings.buttons) {
-                SetTheView(settings.buttons);
+            if (settings) {
+                SetTheView(settings.model,settings.MonthsBack,settings.MonthsForword);
             }
-            $addNewButton.click(() => {
-                AddNewButton();
-                UpdateConfigurations();
-            });
             VSS.resize();
             return WidgetHelpers.WidgetStatusHelper.Success();
         },
         onSave: function () {
             var customSettings = {
                 data: JSON.stringify({
-                    buttons: GetButtonList()
+                    model: $SeletModel.val(),
+                    monthsBack: $MonthsBack.val(),
+                    monthsForword: $MonthsForword.val()
                 })
             };
             return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
@@ -29,53 +32,19 @@ VSS.register("ActionButtonWidget.Configuration", function () {
     }
 });
 
-function GetButtonList() {
-    var x = document.getElementsByClassName("li");
-    let result = "";
-    var i;
-    for (i = 0; i < x.length; i++) {
-        result += x[i].innerHTML +";";
-    } 
-    result = result.substring(0,result.length-1);
-    return result;
-}
-function AddNewButton() {
-    let buttonName = $('#buttonTitle');
-    let buttonACtion = $('#buttonAction');
-    let buttonWit = $('#buttonWit');
-    let button: string = buttonName.val() + "," + buttonACtion.val() + "," + buttonWit.val();
-    AddButtonToView(button);
-    VSS.resize();
-    buttonName.val("");
-    buttonACtion.val("");
-    buttonWit.val("");
-}
-function SetTheView(data: string) {
-    let buttons: string[] = data.split(';');
-    buttons.forEach(button => {
-        AddButtonToView(button);
-        UpdateConfigurations();
-    });
-}
-function AddButtonToView(button: string) {
-    let $ulList = $("#list");
-    let $li = $('<li>');
-    let $label = $('<label>');
-    $label.addClass("li");
-    $label.css("margin-left","5px;")
-    $label.text(button);
-    let removeButton = $('<button>');
-    removeButton.text("X").click(() => {
-        $li.remove();
-    })
-    $li.append(removeButton);
-    $li.append($label);
-    $ulList.append($li);
+function SetTheView(model: string,monthsBack: string,monthsForword: string) {
+    let $SeletModel = $("#ModelList"); 
+    let $MonthsBack = $("#MonthsBack");
+    let $MonthsForword = $("#MonthsForword");
+    $SeletModel.val(model);
+    $MonthsBack.val(monthsBack);
+    $MonthsForword.val(monthsForword);
 }
 function UpdateConfigurations() {
+    let $SeletModel = $("#ModelList");
     var customSettings = {
         data: JSON.stringify({
-            buttons: GetButtonList()
+            model:  $SeletModel.val()
         })
     };
     var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;

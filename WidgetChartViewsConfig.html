@@ -15,42 +15,36 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container"> 
         <fieldset>
-            <label class="label">Buttons: </label>
             <div>
-                <ul id="list">
-
-                </ul>
+                <label for="Views" class="label">Selcet View: </label>
+                <select id="ModelList" name="Views" id="Views">
+                <option value="Model-1">Model-1</option>
+                <option value="Model-2">Model-2</option>
+                <option value="Model-3">Model-3</option>
+                <option value="Model-4">Model-4</option>
+                </select> 
             </div>
             <div>
                 <table>
                     <tr>
                         <td>
-                            <label>Button Title</label>
+                            <label>Months Back</label>
                         </td>
                         <td>
-                            <textarea id="buttonTitle"></textarea>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label>Button Function</label>
-                        </td>
-                        <td>
-                            <textarea id="buttonAction"></textarea>
+                            <textarea id="MonthsBack"></textarea>
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            <label>Data Infos</label>
+                            <label>Months Forword</label>
                         </td>
                         <td>
-                            <textarea id="buttonWit"></textarea>
+                            <textarea id="MonthsForword"></textarea>
                         </td>
                     </tr>
                 </table>
-                <button id="addNewButton">+</button>
             </div>
         </fieldset>
     </div>
