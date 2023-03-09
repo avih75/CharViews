@@ -1,41 +1,47 @@
 import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers"); 
+import WidgetClient = require("TFS/Dashboards/RestClient");
 import WorkItemClient = require("TFS/WorkItemTracking/RestClient");
 import WorkClient = require("TFS/Work/RestClient");
 import CoretionClient = require("TFS/Core/RestClient");
-import CollectionClient = require("TFS/Core/RestClient");
+import { Wiql } from "TFS/WorkItemTracking/Contracts";
+import { TeamContext } from "TFS/Core/Contracts";
+import { VssConnection, VssService } from "VSS/Service";
+import { IterationWorkItems } from "TFS/Work/Contracts";
 
 WidgetHelpers.IncludeWidgetStyles();
+WidgetHelpers.IncludeWidgetConfigurationStyles();
+
 let WIClient = WorkItemClient.getClient();
+let WCClient = WidgetClient.getClient();
 let WClient = WorkClient.getClient();
-let CClient = CoretionClient.getClient();
+let CClient = CoretionClient.getClient(); 
+
+let TeamName = VSS.getWebContext().team.name;
+let ProjectName = VSS.getWebContext().project.name;
+let WorkItems: string[] = [];
+let TeamDic = {};
+let ItterationDic = {};
+let ItterationDicURL = {};
+let ItterationDicName = {};
+
 VSS.register("ChartViewsWidget", function () {
     let getQueryInfo = function (widgetSettings) {
         var settings = JSON.parse(widgetSettings.customSettings.data);
-        let container = $('#View-container');
-        if (!settings) {
-            container.empty();
+        let container = $("#ViewContainer");      
+        container.empty();
+        if (!settings) {            
             container.text("Sorry nothing to show, please configure a buttons");
             return WidgetHelpers.WidgetStatusHelper.Success();
         }
-        else {     
-            let TeamSelect = $("<select />");            
-            TeamSelect.change((eventObject: JQueryEventObject) =>{   
-                let SelectedTeam = TeamSelect.val();                      
-                WClient.getTeamIterations(SelectedTeam).then((Itterations)=>{
-                    let ItterationSelect = $("<select />");
-                    Itterations.forEach(itteration =>{
-                        ItterationSelect.append(itteration.name);
-                    })
-                    ItterationSelect.change((eventObject: JQueryEventObject)=>{
-                        MakeQuery(settings.model,settings.monthsBack,settings.monthsForword,ItterationSelect.val(),SelectedTeam.val()).then((ViewModel)=>{
-                            ShowViewModel(ViewModel);
-                        });                          
-                    })
-                    container.add(ItterationSelect);                   
-                });
-            });
-            container.add(TeamSelect);
-            GetAllTeams(TeamSelect);    
+        else {                
+            let TeamSelect = $("<select />");   
+            let ItterationSelect = $("<select />"); 
+            container.append(TeamSelect);         
+            container.append(ItterationSelect);                
+            TeamSelect.change((eventObject: JQueryEventObject) => ChangeTeam(TeamSelect,ItterationSelect));            
+            ItterationSelect.change((eventObject: JQueryEventObject)=> ChangeItteration(settings,ItterationSelect.val(),TeamSelect.val()));
+            GetAlWits();
+            GetAllTeams(TeamSelect,ItterationSelect);        
             return WidgetHelpers.WidgetStatusHelper.Success();
         }
     }
@@ -48,18 +54,104 @@ VSS.register("ChartViewsWidget", function () {
         }
     }
 });
-function GetAllTeams(newSelect){
+function GetAlWits(){
+    let Wits = $("#WitsList");
+    WIClient.getWorkItemTypes(ProjectName).then((WitsTypes)=>{
+        WitsTypes.forEach(WitsType => {
+            let WitLabel = $('<label>').append(WitsType.name);
+            let WitCheckBox = $('<input type="checkbox">').attr({
+                'name': WitsType.name + '-checkbox',
+                'value': WitsType.name,
+                'checked': false
+              }); 
+            WitCheckBox.click(function(){
+                WorkItems = []; 
+                $('#WitsList input[type="checkbox"]:checked').each(function() {
+                    WorkItems.push($(this).val());
+                });
+            });
+            WitLabel.append(WitCheckBox);
+            Wits.append(WitLabel);
+        });
+    })
+}
+function GetAllTeams(NewSelect,ItterationSelect){
     CClient.getAllTeams().then((TeamList)=>{
         TeamList.forEach(Team =>{
-            newSelect.append(new Option(Team.name));
-        })
-    });
+            if (Team.projectName==ProjectName){
+                NewSelect.append(new Option(Team.name)); //NewSelect.append(new Option(Team.id));
+                let teamContext: TeamContext = {"project": Team.projectName,"projectId": Team.projectId,"team": Team.name,"teamId": Team.id}
+                TeamDic[Team.name]=teamContext;
+            }
+        });
+    }).then(()=>{
+        NewSelect.val(TeamName);
+        ChangeTeam(NewSelect,ItterationSelect);
+    }); 
 } 
-async function MakeQuery(SelecctModel,MonthsBack,MonthsForword,Itteration,Team){
+async function ChangeTeam(TeamSelect:JQuery,ItterationSelect:JQuery){ 
+    ItterationDic = {};
+    ItterationDicURL = {};
+    ItterationDicName = {};
+    ItterationSelect.empty();
+    let SelectedTeam = TeamSelect.val(); 
+    let teamContext: TeamContext = TeamDic[SelectedTeam];
+    let Itterations = await WClient.getTeamIterations(teamContext);
+    let counter = 0;
+    Itterations.forEach(itteration =>{
+        ItterationSelect.append(new Option(itteration.name));        
+        ItterationDic[itteration.name]= counter;
+        ItterationDicURL[itteration.name] = itteration.id;
+        ItterationDicName[itteration.name] = itteration.name;
+        counter = counter +1;
+    });   
+    let Itteration = await WClient.getTeamIterations(teamContext,"Current");  
+    ItterationSelect.val(Itteration[0].name);
+}
+function ChangeItteration(settings,Itteration,Team){
+    let ItterationId: number = ItterationDic[Itteration];  
+    let Fmont:number = settings.monthsForword;
+    let Bmont:number = settings.monthsBack;
+    let Maxnum:number = ItterationId + Number(Fmont);
+    let Minnum:number = ItterationId - Number(Bmont);
+    let ItterationArray: string[] = []
+    for (let Itte in ItterationDic)
+    {
+        let CheckId :Number = ItterationDic[Itte];
+        if ( CheckId >= Minnum && CheckId <= Maxnum ){
+            ItterationArray.push(ItterationDicURL[Itte]);
+        }
+    }
+    MakeQuery(settings.model,ItterationArray,Itteration,Team).then((ViewModel)=>{
+        ShowViewModel(ViewModel);
+    });                          
+} 
+async function MakeQuery(SelecctModel,ItterationArray: string[],Itteration,Team){ 
+    let teamContext: TeamContext = TeamDic[Team];
+    let x: IterationWorkItems[] = [];
+    ItterationArray.forEach(itt => {       
+        WClient.getIterationWorkItems(teamContext,itt).then((results)=>{
+            x.push(results);
+        });
+    });
+    
     // build query
+    let ItterationString = "";
+    ItterationArray.forEach(itt => {       
+        ItterationString = ItterationString + "'" + itt + "',";
+    });
+    ItterationString = ItterationString.slice(0,-1)
+    let WorkItemsString = "";
+    WorkItems.forEach(WorkItem => {
+        WorkItemsString = WorkItemsString + "'" + WorkItem + "',";
+    });
+    WorkItemsString = WorkItemsString.slice(0,-1)
+    let valval = "Test\\Sprint January";
+    let wiql: Wiql = {'query' : "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.AreaPath],[System.IterationPath] FROM workitems Where [System.TeamProject] = '" + ProjectName + "' And [IterationPath] = '" + valval + "'"};  //+ ItterationString + ")" };// AND [System.WorkItemType] IN (" + WorkItemsString + ")"};
     // call query
+    let WitsList = await WIClient.queryByWiql(wiql, "test",Team);
     // build Model
-    return Object;
+    return WitsList;
 }
 function ShowViewModel(ViewModel){
     // Clear

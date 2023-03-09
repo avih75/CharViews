@@ -6,7 +6,13 @@ VSS.register("ChartViewsWidget.Configuration", function () {
     let $SeletModel = $("#ModelList");
     let $MonthsBack = $("#MonthsBack");
     let $MonthsForword = $("#MonthsForword");
+    $MonthsForword.change((eventObject: JQueryEventObject) => {                
+        UpdateConfigurations();
+    });
     $SeletModel.change((eventObject: JQueryEventObject) => {                
+        UpdateConfigurations();
+    });
+    $MonthsBack.change((eventObject: JQueryEventObject) => {                
         UpdateConfigurations();
     });
     return {
@@ -14,7 +20,7 @@ VSS.register("ChartViewsWidget.Configuration", function () {
             WidgetConfigurationContext = widgetConfigurationContext;
             let settings = JSON.parse(widgetSettings.customSettings.data);
             if (settings) {
-                SetTheView(settings.model,settings.MonthsBack,settings.MonthsForword);
+                SetTheView(settings.model,settings.monthsBack,settings.monthsForword);
             }
             VSS.resize();
             return WidgetHelpers.WidgetStatusHelper.Success();
@@ -42,9 +48,13 @@ function SetTheView(model: string,monthsBack: string,monthsForword: string) {
 }
 function UpdateConfigurations() {
     let $SeletModel = $("#ModelList");
+    let $MonthsBack = $("#MonthsBack");
+    let $MonthsForword = $("#MonthsForword");
     var customSettings = {
         data: JSON.stringify({
-            model:  $SeletModel.val()
+            model:  $SeletModel.val(),
+            monthsBack: $MonthsBack.val(),
+            monthsForword: $MonthsForword.val()
         })
     };
     var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;

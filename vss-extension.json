@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "ChartViews",
-    "version": "1.0.14",
+    "version": "1.0.77",
     "name": "Chart Views Extenshion",
     "scopes": [
         "vso.work",
@@ -41,26 +41,26 @@
     },
     "repository": {
         "type": "git",
-        "uri": "https://github.com/avih75/TFS_Action_Button"
+        "uri": "https://github.com/avih75/ChartViews"
     },
     "links": {
         "support": {
-            "uri": "https://github.com/avih75/TFS_Action_Button/issues"
+            "uri": "https://github.com/avih75/ChartViews/issues"
         },
         "license": {
-            "uri": "https://github.com/avih75/TFS_Action_Button/blob/master/LICENSE.md"
+            "uri": "https://github.com/avih75/ChartViews/blob/master/LICENSE.md"
         },
         "privacypolicy": {
-            "uri": "https://github.com/avih75/TFS_Action_Button/blob/master/PRIVACY.md"
+            "uri": "https://github.com/avih75/ChartViews/blob/master/PRIVACY.md"
         },
         "learn": {
-            "uri": "https://github.com/avih75/TFS_Action_Button/blob/master/README.md"
+            "uri": "https://github.com/avih75/ChartViews/blob/master/README.md"
         },
         "repository": {
-            "uri": "https://github.com/avih75/TFS_Action_Button"
+            "uri": "https://github.com/avih75/ChartViews"
         },
         "issues": {
-            "uri": "https://github.com/avih75/TFS_Action_Button/issues"
+            "uri": "https://github.com/avih75/ChartViews/issues"
         }
     },
     "files": [{
