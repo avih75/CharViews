@@ -6,7 +6,7 @@
 node_modules
 scripts/*.js
 typings
-*.vsix
+
 
 # User-specific files
 *.rsuser

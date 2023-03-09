@@ -21,8 +21,7 @@ let ProjectName = VSS.getWebContext().project.name;
 let WorkItems: string[] = [];
 let TeamDic = {};
 let ItterationDic = {};
-let ItterationDicURL = {};
-let ItterationDicName = {};
+let ItterationId = {}; 
 
 VSS.register("ChartViewsWidget", function () {
     let getQueryInfo = function (widgetSettings) {
@@ -91,54 +90,44 @@ function GetAllTeams(NewSelect,ItterationSelect){
 } 
 async function ChangeTeam(TeamSelect:JQuery,ItterationSelect:JQuery){ 
     ItterationDic = {};
-    ItterationDicURL = {};
-    ItterationDicName = {};
+    ItterationId = {};
     ItterationSelect.empty();
     let SelectedTeam = TeamSelect.val(); 
     let teamContext: TeamContext = TeamDic[SelectedTeam];
     let Itterations = await WClient.getTeamIterations(teamContext);
-    let counter = 0;
+    let counter:number = 0;
     Itterations.forEach(itteration =>{
         ItterationSelect.append(new Option(itteration.name));        
-        ItterationDic[itteration.name]= counter;
-        ItterationDicURL[itteration.name] = itteration.id;
-        ItterationDicName[itteration.name] = itteration.name;
+        ItterationId[itteration.name]= counter;
+        ItterationDic[itteration.name] = itteration;
         counter = counter +1;
     });   
     let Itteration = await WClient.getTeamIterations(teamContext,"Current");  
     ItterationSelect.val(Itteration[0].name);
 }
 function ChangeItteration(settings,Itteration,Team){
-    let ItterationId: number = ItterationDic[Itteration];  
+    let IttId = ItterationId[Itteration];  
     let Fmont:number = settings.monthsForword;
     let Bmont:number = settings.monthsBack;
-    let Maxnum:number = ItterationId + Number(Fmont);
-    let Minnum:number = ItterationId - Number(Bmont);
-    let ItterationArray: string[] = []
+    let Maxnum:number = IttId + Number(Fmont);
+    let Minnum:number = IttId - Number(Bmont);
+    let ItterationArray = []
     for (let Itte in ItterationDic)
     {
         let CheckId :Number = ItterationDic[Itte];
         if ( CheckId >= Minnum && CheckId <= Maxnum ){
-            ItterationArray.push(ItterationDicURL[Itte]);
+            ItterationArray.push(ItterationDic[Itte]);
         }
     }
     MakeQuery(settings.model,ItterationArray,Itteration,Team).then((ViewModel)=>{
         ShowViewModel(ViewModel);
     });                          
 } 
-async function MakeQuery(SelecctModel,ItterationArray: string[],Itteration,Team){ 
-    let teamContext: TeamContext = TeamDic[Team];
-    let x: IterationWorkItems[] = [];
-    ItterationArray.forEach(itt => {       
-        WClient.getIterationWorkItems(teamContext,itt).then((results)=>{
-            x.push(results);
-        });
-    });
-    
+async function MakeQuery(SelecctModel,ItterationArray,Itteration,Team){  
     // build query
     let ItterationString = "";
     ItterationArray.forEach(itt => {       
-        ItterationString = ItterationString + "'" + itt + "',";
+        ItterationString = ItterationString + "'" + itt.path + "',";
     });
     ItterationString = ItterationString.slice(0,-1)
     let WorkItemsString = "";
@@ -150,6 +139,8 @@ async function MakeQuery(SelecctModel,ItterationArray: string[],Itteration,Team)
     let wiql: Wiql = {'query' : "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.AreaPath],[System.IterationPath] FROM workitems Where [System.TeamProject] = '" + ProjectName + "' And [IterationPath] = '" + valval + "'"};  //+ ItterationString + ")" };// AND [System.WorkItemType] IN (" + WorkItemsString + ")"};
     // call query
     let WitsList = await WIClient.queryByWiql(wiql, "test",Team);
+    // Get All work items with all data
+    // WIClient.getWorkItems()
     // build Model
     return WitsList;
 }
