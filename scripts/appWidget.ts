@@ -1,12 +1,16 @@
+import Services = require("Charts/Services");
 import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers"); 
 import WidgetClient = require("TFS/Dashboards/RestClient");
 import WorkItemClient = require("TFS/WorkItemTracking/RestClient");
 import WorkClient = require("TFS/Work/RestClient");
 import CoretionClient = require("TFS/Core/RestClient");
-import { Wiql } from "TFS/WorkItemTracking/Contracts";
+import { Wiql, WorkItemExpand, WorkItem } from "TFS/WorkItemTracking/Contracts";
 import { TeamContext } from "TFS/Core/Contracts";
 import { VssConnection, VssService } from "VSS/Service";
 import { IterationWorkItems } from "TFS/Work/Contracts";
+import { CommonChartOptions, ChartTypesConstants, ClickEvent, LegendOptions, TooltipOptions, ColorCustomizationOptions, ColorEntry } from "Charts/Contracts";
+
+import witManager = require("TFS/WorkItemTracking/Services");
 
 WidgetHelpers.IncludeWidgetStyles();
 WidgetHelpers.IncludeWidgetConfigurationStyles();
@@ -14,7 +18,8 @@ WidgetHelpers.IncludeWidgetConfigurationStyles();
 let WIClient = WorkItemClient.getClient();
 let WCClient = WidgetClient.getClient();
 let WClient = WorkClient.getClient();
-let CClient = CoretionClient.getClient(); 
+let CClient = CoretionClient.getClient();  
+
 
 let TeamName = VSS.getWebContext().team.name;
 let ProjectName = VSS.getWebContext().project.name;
@@ -147,4 +152,100 @@ async function MakeQuery(SelecctModel,ItterationArray,Itteration,Team){
 function ShowViewModel(ViewModel){
     // Clear
     // Generate the chart
+}
+function ShowViewModel2(selectedSuite: SumeSuite, $rightGraph: JQuery, title: string, colorize: ColorCustomizationOptions, isIsolate: boolean, projectName: string, palnId: number)
+{
+    let legend: LegendOptions = {
+        enabled: false
+    }
+    let data: number[] = [
+        selectedSuite.TotalPaused,
+        selectedSuite.TotalBlocked,
+        selectedSuite.TotalNotApplicable,
+        selectedSuite.TotalPassed,
+        selectedSuite.TotalFailed,
+        selectedSuite.TotalInProgress,
+        selectedSuite.TotalNotRun
+    ]
+    let chartPieOptions: CommonChartOptions = {
+        "title": title,
+        "suppressMargin": true,
+        "legend": legend,
+        suppressAnimation: true,
+        hostOptions: { height: 250, width: 250 },
+        "chartType": ChartTypesConstants.Pie,
+        colorCustomizationOptions: colorize,
+        "xAxis": {
+            title: title,
+            canZoom: true,
+            labelsEnabled: false,
+            labelValues: ["Paused", "Blocked", "Not Applicable", "Passed", "Failed", "In Progress", "Not Run"]
+        },
+        "series": [{
+            data
+        }],
+        "click": (clickeEvent: ClickEvent) => {
+            DrillDown();
+        },
+        "specializedOptions": {
+            showLabels: true,
+            size: "80%"
+        },
+    }
+    Services.ChartsService.getService().then((chartService) => {
+        chartService.createChart($rightGraph, chartPieOptions);
+    });
+}
+function DrillDown(){
+
+}
+class SumeSuite {
+    constructor(name: string, id: number, url: string = "") {
+        this.SuiteName = name;
+        this.Blocked = 0
+        this.Failed = 0
+        this.InProgress = 0
+        this.NotApplicable = 0
+        this.NotRun = 0
+        this.Passed = 0
+        this.Paused = 0
+        this.totalPoints = 0
+        this.suiteLevel = 0
+        this.TotalPassed = 0;
+        this.TotalFailed = 0;
+        this.TotalNotRun = 0;
+        this.TotalNotApplicable = 0;
+        this.TotalInProgress = 0;
+        this.TotalPaused = 0;
+        this.TotalBlocked = 0;
+        this.SuiteId = id;
+        this.url = url;
+    }
+    SuiteId: number;
+    SuiteName: string;
+    Passed: number;
+    Failed: number;
+    NotRun: number;
+    NotApplicable: number;
+    InProgress: number;
+    Paused: number;
+    Blocked: number;
+    TotalPassed: number;
+    TotalFailed: number;
+    TotalNotRun: number;
+    TotalNotApplicable: number;
+    TotalInProgress: number;
+    TotalPaused: number;
+    TotalBlocked: number;
+    totalPoints: number;
+    suiteLevel: number;
+    ParentID: string;
+    TotalIncludeChildren: number;
+    AssignTo: string;
+    url: string;
+}
+function OpenWorkItem(id: number, url: string) {
+    witManager.WorkItemFormNavigationService.getService().then((service) => {
+        service.openWorkItem(id, false);
+    })
 }
