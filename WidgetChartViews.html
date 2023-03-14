@@ -4,7 +4,8 @@
 <head>
     <script src="scripts/VSS.SDK.min.js"></script>
     <script type="text/javascript">
-        VSS.init({
+
+        VSS.init({            
             explicitNotifyLoaded: true,
             usePlatformStyles: true
         });
@@ -25,6 +26,39 @@
             background-color: blue;
             border: 1px solid #CCCCCC;
         }
+        .multiselect {
+  width: 200px;
+}
+
+.selectBox {
+  position: relative;
+}
+
+.selectBox select {
+  width: 100%;
+  font-weight: bold;
+}
+
+.overSelect {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+#checkboxes {
+  display: none;
+  border: 1px #dadada solid;
+}
+
+#checkboxes label {
+  display: block;
+}
+
+#checkboxes label:hover {
+  background-color: #1e90ff;
+}
     </style>
 </head>
 
@@ -32,9 +66,21 @@
     <div class="widget">
         <fieldset>
             <div>
-                <h4 class="title" style="margin-left: 15px;">Chart Views</h4>
-                <div id="WitsList"></div>
-                <div id="ViewContainer"></div>    
+                <h4 class="title" style="margin-left: 15px;">Chart Views</h4>                
+                <div id="ViewContainer"></div>
+                <!-- <div class="multiselect">
+                    <div class="selectBox" >
+                      <select>
+                        <option>Select an option</option>
+                      </select>
+                      <div class="overSelect"></div>
+                    </div>
+                    <div id="checkboxes"></div>                                       
+                </div>
+                <table style="overflow-x:auto;">
+                    <tr id="ChartContainer" style="overflow-x:auto;">
+                    </tr> 
+                </table>    -->
             </div>
         </fieldset>    
     </div>
