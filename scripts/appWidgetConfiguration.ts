@@ -19,7 +19,6 @@ export class Settings{
     onGoingStateList:string[];
     commitState: string;
 }
-
 VSS.register("ChartViewsWidget.Configuration", function () {
     let $SeletMode = $("#ModeList");
     let $MonthsBack = $("#MonthsBack");
@@ -72,14 +71,13 @@ VSS.register("ChartViewsWidget.Configuration", function () {
                     workItems: WorkItems,
                     endStateList: EndStateList,
                     onGoingStateList: OnGoingStateList,
-                    commitState: CommitState
+                    commitState: $CommitState.val()
                 })
             };
             return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
         }
     }
 });
-
 function SetTheView(settings: Settings) {
     let $CommitState = $("#CommitState");    
     $CommitState.val(settings.commitState);
@@ -107,13 +105,13 @@ function SetTheView(settings: Settings) {
     OnGoingStateList.forEach(OnGoingState => {
         $("#" + OnGoingState + "-ongoing-checkbox").attr('checked','true'); 
     });
-
     VSS.resize();
 }
 function UpdateConfigurations() {
     let $SeletMode = $("#ModeList");
     let $MonthsBack = $("#MonthsBack");
     let $MonthsForword = $("#MonthsForword");
+    let $CommitState = $("#CommitState");
     let customSettings = {
         data: JSON.stringify({
             mode:  $SeletMode.val(),
@@ -122,11 +120,12 @@ function UpdateConfigurations() {
             workItems: WorkItems,
             endStateList: EndStateList,
             onGoingStateList: OnGoingStateList,
-            commitState: CommitState
+            commitState: $CommitState.val()
         })
     };
     let eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
     let eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
+    VSS.resize();
     WidgetConfigurationContext.notify(eventName, eventArgs);
 }
 async function GetAlWits(){
@@ -195,7 +194,8 @@ async function GetAlWits(){
             });
             OnGoingStateLabel.append(OnGoingSateCheckBox);
             OnGoingStateListChecks.append(OnGoingStateLabel); 
-            CommitState.append(new Option(state));            
+            CommitState.append(new Option(state));
+            VSS.resize();          
         });
     })
 } 
