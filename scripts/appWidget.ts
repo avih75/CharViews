@@ -36,6 +36,7 @@ let MaxForword: number = 0;
 let AllItterations: TeamSettingsIteration[]= [];
 let FirstDate:String;
 let LastDate:String;
+
 let TeamDic = {};
 let ItterationDic = {};
 let ItterationId = {};  
@@ -174,16 +175,16 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
         }
     }
     if (HistoryItterations && HistoryItterations.length>0 && HistoryItterations[0].attributes.finishDate){
-        FirstDate = HistoryItterations[0].attributes.startDate.toString();
+        FirstDate = HistoryItterations[0].attributes.startDate.toDateString();
     }
     else{
-        FirstDate = CurentItteration.attributes.startDate.toString();
+        FirstDate = CurentItteration.attributes.startDate.toDateString();
     }
     if (FeaatureItterations && FeaatureItterations.length>0 && FeaatureItterations[FeaatureItterations.length-1].attributes.finishDate){
-        LastDate = FeaatureItterations[0].attributes.finishDate.toString();
+        LastDate = FeaatureItterations[0].attributes.finishDate.toDateString();
     }
     else{
-        LastDate = CurentItteration.attributes.finishDate.toString();
+        LastDate = CurentItteration.attributes.finishDate.toDateString();
     }
     AllItterations=HistoryItterations;
     AllItterations.push(CurentItteration);
@@ -206,7 +207,7 @@ async function GetViewModel1(){
         }
         IdList.push(wit.id);
     });
-    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] = DATE(NOW())"};// + FirstDate + "'"}; // Add last update is smaller then smalest date
+    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] < '" + FirstDate + "'"}; // Add last update is smaller then smalest date
     WitsList = await WIClient.queryByWiql(CloseddWiql, Project.name,Team.name);
     WitsList.workItems.forEach(wit => {        
         if (IdList.length==50)
@@ -276,3 +277,5 @@ function BuildViewModel(FullWorkItemList: WorkItem[]){
 async function ShowViewModel1(ViewModel1: ViewModel1){
 
 }
+//const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
+//const shortDate = date.toLocaleDateString('en-US', options);
