@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "ChartViews",
-    "version": "1.0.218",
+    "version": "1.0.219",
     "name": "Chart Views Extenshion",
     "scopes": [
         "vso.work",
@@ -125,21 +125,21 @@
                 "isNameConfigurable": true,
                 "supportedSizes": [{
                     "rowSpan": 2,
+                    "columnSpan": 3
+                }, {
+                    "rowSpan": 2,
                     "columnSpan": 4
                 }, {
                     "rowSpan": 2,
                     "columnSpan": 5
                 }, {
-                    "rowSpan": 3,
-                    "columnSpan": 5
-                }, {
-                    "rowSpan": 3,
+                    "rowSpan": 2,
                     "columnSpan": 6
                 }, {
-                    "rowSpan": 4,
+                    "rowSpan": 2,
                     "columnSpan": 7
                 }, {
-                    "rowSpan": 4,
+                    "rowSpan": 2,
                     "columnSpan": 8
                 }],
                 "supportedScopes": ["project_team"]
