@@ -33,6 +33,7 @@ let Commited: String; //"Approved";
 let OnGoing: String[];// = "On Going";
 let MaxBack: number = 5;
 let MaxForword: number = 0;
+let SelecctedWitsList: String="";
 let AllItterations: TeamSettingsIteration[]= [];
 let FirstDate:String;
 let LastDate:String;
@@ -81,6 +82,11 @@ VSS.register("ChartViewsWidget", function (){
                 DoneStates = "'" + EndState + "'," + DoneStates;
             });
             DoneStates = DoneStates.slice(0, -1); 
+
+            WidgetSettings.workItems.forEach(Wit => {
+                SelecctedWitsList = "'" + Wit + "'," + SelecctedWitsList;
+            });
+            SelecctedWitsList = SelecctedWitsList.slice(0, -1);
             OnGoing = WidgetSettings.onGoingStateList;
             Commited = WidgetSettings.commitState;
             MyTeamContext = {"project": Project.name,"projectId": Project.id,"team": Team.name,"teamId": Team.id};
@@ -194,10 +200,11 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
 function SetViewMode1(){
     GetViewModel1().then((ViewModel1)=> ShowViewModel1(ViewModel1));
 }
-async function GetViewModel1(){      
+async function GetViewModel1(){
+    let DuplicateCheck: number[]=[];   
     let IdLists: number[][]=[]; 
     let IdList: number[] = [];
-    let OpendWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath] FROM workitems Where [System.TeamProject] = '" + Project.name + "' And [System.State] NOT IN (" + DoneStates + ")"};
+    let OpendWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath] FROM workitems Where [System.TeamProject] = '" + Project.name + "' AND [System.WorkItemType] IN (" + SelecctedWitsList + ") And [System.State] NOT IN (" + DoneStates + ")"};
     let WitsList = await WIClient.queryByWiql(OpendWiql, Project.name,Team.name);
     WitsList.workItems.forEach(wit => {        
         if (IdList.length==50)
@@ -205,9 +212,12 @@ async function GetViewModel1(){
             IdLists.push(IdList);
             IdList = [];
         }
-        IdList.push(wit.id);
+        if (DuplicateCheck.lastIndexOf(wit.id)==-1) {
+            DuplicateCheck.push(wit.id);
+            IdList.push(wit.id);
+        } 
     });
-    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] < '" + FirstDate + "'"}; // Add last update is smaller then smalest date
+    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' AND [System.WorkItemType] IN (" + SelecctedWitsList + ") And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] > '" + FirstDate + "'"}; // Add last update is smaller then smalest date
     WitsList = await WIClient.queryByWiql(CloseddWiql, Project.name,Team.name);
     WitsList.workItems.forEach(wit => {        
         if (IdList.length==50)
@@ -215,7 +225,10 @@ async function GetViewModel1(){
             IdLists.push(IdList);
             IdList = [];
         }
-        IdList.push(wit.id);
+        if (DuplicateCheck.lastIndexOf(wit.id)==-1) {
+            DuplicateCheck.push(wit.id);
+            IdList.push(wit.id);
+        }        
     });
     IdLists.push(IdList);
     let FullWorkItemList: WorkItem[];
