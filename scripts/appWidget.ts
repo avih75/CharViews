@@ -3,7 +3,7 @@ import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers");
 import WidgetClient = require("TFS/Dashboards/RestClient");
 import WorkItemClient = require("TFS/WorkItemTracking/RestClient");
 import WorkClient = require("TFS/Work/RestClient");
-import CoretionClient = require("TFS/Core/RestClient");
+import CoreClient = require("TFS/Core/RestClient");
 import witManager = require("TFS/WorkItemTracking/Services");
 import { TeamContext } from "TFS/Core/Contracts";
 import { ColorEntry, TooltipOptions, CommonChartOptions, ChartTypesConstants, ClickEvent, LegendOptions,  ColorCustomizationOptions, HybridChartOptions, ChartHostOptions } from "Charts/Contracts";
@@ -18,25 +18,26 @@ WidgetHelpers.IncludeWidgetStyles();
 WidgetHelpers.IncludeWidgetConfigurationStyles();
 
 let WIClient = WorkItemClient.getClient();
-let WCClient = WidgetClient.getClient();
 let WClient = WorkClient.getClient();
-let CClient = CoretionClient.getClient();  
+let WCClient = WidgetClient.getClient();
+let CClient = CoreClient.getClient();  
 
+const MaxCallIds:number=200;
 let Team = VSS.getWebContext().team;
 let Project = VSS.getWebContext().project;
 let MyTeamContext: TeamContext;
 let WidgetSettings:Settings;
-let EndStates: String[]; //= "'Closed','Done','Rejected'";
-let DoneStates: String="";
+let EndStates: string[]; //= "'Closed','Done','Rejected'"; 
+let DoneStates: string="";
 //let Done:String = "Done";
-let Commited: String; //"Approved";
-let OnGoing: String[];// = "On Going";
+let Commited: string; //"Approved";
+let OnGoing: string[];// = "On Going";
 let MaxBack: number = 5;
 let MaxForword: number = 0;
-let SelecctedWitsList: String="";
+let SelecctedWitsList: string="";
 let AllItterations: TeamSettingsIteration[]= [];
-let FirstDate:String;
-let LastDate:String;
+let FirstDate:Date;
+let LastDate:Date;
 
 let TeamDic = {};
 let ItterationDic = {};
@@ -45,27 +46,150 @@ let ItterationId = {};
 let Itterations: TeamSettingsIteration[]= [];
 let CharType = ChartTypesConstants.StackedColumn;
 let hybridChartOptions: HybridChartOptions = {chartTypes:[ChartTypesConstants.Bar,ChartTypesConstants.StackedColumn,ChartTypesConstants.Bar]}
-class ViewModel1 {
+
+class DataModel1 {
+    ItterationData: ItterationData1[];
+    constructor() {
+        this.ItterationData = [];
+        AllItterations.forEach(Itteration => {
+            let ItterationView:ItterationData1 = new ItterationData1(Itteration);
+            this.ItterationData.push(ItterationView);
+        });
+    }
+    NewSpot(Spt:Spot){
+        this.ItterationData.forEach(Itteration => {
+            if (Itteration.id==Spt.Itteration.id)
+            {
+                Itteration.NewSpot(Spt)
+            }
+        });
+    }
+    UpdateSpotState(){
+
+    }
+    RemoveSpot(){
+
+    }
+}
+class ItterationData1{   
+    constructor(Itteration: TeamSettingsIteration) {
+        this.id= Itteration.id;
+        this.name= Itteration.name;
+        this.path= Itteration.path;
+        this.url= Itteration.url;
+        this.startTime= Itteration.attributes.startDate;
+        this.endTime= Itteration.attributes.finishDate;
+        this.planed= new BarModel();
+        this.postPoned= new BarModel();
+    }
     id: string;                  // sprint ID
-    startTime: string;           // start time
-    endTime: string;             // end time
+    startTime: Date;           // start time
+    endTime: Date;             // end time
     name: string;                // sprint name
     path: string;                // sprint path
     url: string;
     postPoned: BarModel;
-    planed: BarModel;    
-    movedForward: BarModel; 
+    planed: BarModel;  
+    NewSpot(Spt:Spot){ 
+        if (Spt.SpotLocation==SpotLocation.Planed){
+            this.planed.NewSpot(Spt);
+        }
+        else if (Spt.SpotLocation==SpotLocation.PostPoned){
+            this.postPoned.NewSpot(Spt);
+        }
+    }
+    UpdateSpotState(){
+
+    }   
+    RemoveSpot(){
+
+    }
 }
 class BarModel {
+    constructor() {
+        this.Total = 0;
+        this.Closed = new StateModel();
+        this.OnGoing = new StateModel();
+        this.new = new StateModel(); 
+        this.Cancle = new StateModel();
+        this.Postponed = new StateModel();
+    }
     Total: number;         // Wits counter
-    Done: StateModel;      // done success
+    Closed: StateModel;      // done success
     OnGoing: StateModel;   // any state else
-    New: StateModel;       // not started
-    Closed: StateModel;    // not done
+    new: StateModel;        // not started 
+    Postponed: StateModel;   // any state else
+    Cancle: StateModel;        // not started 
+    NewSpot(Spt:Spot){
+        switch(Spt.SpotState){
+            case SpotState.New:{
+                this.new.NewSpot(Spt);
+                break;
+            }
+            case SpotState.Cancle:{
+                this.Cancle.NewSpot(Spt);
+                break;
+            }
+            case SpotState.Closed:{
+                this.Closed.NewSpot(Spt);
+                break;
+            }
+            case SpotState.Postponed:{
+                this.Postponed.NewSpot(Spt);
+                break;
+            }
+            case SpotState.OnGoing:{
+                this.OnGoing.NewSpot(Spt);
+                break;
+            }
+        } 
+        this.Total+=1;
+    }
+    UpdateSpotState(){
+
+    }   
+    RemoveSpot(){
+        this.Total-=1;
+    }
 }
 class StateModel {
+    constructor() {
+        this.Total = 0;
+        this.WitIds = [];
+        this.WitTitle = [];
+    }
     Total: number;         // state counter
-    Wits: string[];        // wits id+title
+    WitIds: number[];        // wits id
+    WitTitle: string[];
+    NewSpot(Spt:Spot){
+        this.WitIds.push(Spt.WitId);
+        this.WitTitle.push(Spt.WitTitle);
+        this.Total+=1;
+    }
+    UpdateSpotState(){
+
+    }   
+    RemoveSpot(){
+        this.Total-=1;
+    }
+}
+class Spot{
+    SpotLocation:SpotLocation;
+    SpotState:SpotState;
+    Itteration:TeamSettingsIteration;
+    WitId:number;
+    WitTitle:string;
+}
+enum SpotLocation {
+    Planed,
+    PostPoned
+}
+enum SpotState {
+    Closed,
+    OnGoing,
+    Postponed,
+    Cancle,
+    New
 }
 VSS.register("ChartViewsWidget", function (){
     let getQueryInfo = function (widgetSettings) {
@@ -131,7 +255,7 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
     } 
     let CurentItteration: TeamSettingsIteration;
     while(TempList.length>0){
-        let Itteration: TeamSettingsIteration = TempList.pop();
+        let Itteration: TeamSettingsIteration = TempList.pop(); 
         if (Itteration.attributes.timeFrame == 0 ){ // past
             if (MaxBack>0){
                 HistoryItterations.push(Itteration);
@@ -181,16 +305,16 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
         }
     }
     if (HistoryItterations && HistoryItterations.length>0 && HistoryItterations[0].attributes.finishDate){
-        FirstDate = HistoryItterations[0].attributes.startDate.toDateString();
+        FirstDate = HistoryItterations[0].attributes.startDate;
     }
     else{
-        FirstDate = CurentItteration.attributes.startDate.toDateString();
+        FirstDate = CurentItteration.attributes.startDate;
     }
     if (FeaatureItterations && FeaatureItterations.length>0 && FeaatureItterations[FeaatureItterations.length-1].attributes.finishDate){
-        LastDate = FeaatureItterations[0].attributes.finishDate.toDateString();
+        LastDate = FeaatureItterations[0].attributes.finishDate;
     }
     else{
-        LastDate = CurentItteration.attributes.finishDate.toDateString();
+        LastDate = CurentItteration.attributes.finishDate;
     }
     AllItterations=HistoryItterations;
     AllItterations.push(CurentItteration);
@@ -198,7 +322,7 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
     return AllItterations;
 } 
 function SetViewMode1(){
-    GetViewModel1().then((ViewModel1)=> ShowViewModel1(ViewModel1));
+    GetViewModel1().then((ViewModel1)=> ShowViewModels1(ViewModel1));
 }
 async function GetViewModel1(){
     let DuplicateCheck: number[]=[];   
@@ -207,7 +331,7 @@ async function GetViewModel1(){
     let OpendWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath] FROM workitems Where [System.TeamProject] = '" + Project.name + "' AND [System.WorkItemType] IN (" + SelecctedWitsList + ") And [System.State] NOT IN (" + DoneStates + ")"};
     let WitsList = await WIClient.queryByWiql(OpendWiql, Project.name,Team.name);
     WitsList.workItems.forEach(wit => {        
-        if (IdList.length==50)
+        if (IdList.length==MaxCallIds)
         {
             IdLists.push(IdList);
             IdList = [];
@@ -217,10 +341,10 @@ async function GetViewModel1(){
             IdList.push(wit.id);
         } 
     });
-    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' AND [System.WorkItemType] IN (" + SelecctedWitsList + ") And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] > '" + FirstDate + "'"}; // Add last update is smaller then smalest date
+    let CloseddWiql: Wiql = {'query' : "SELECT [System.Id],[System.IterationPath],[System.AreaPath]  FROM workitems Where [System.TeamProject] = '" + Project.name + "' AND [System.WorkItemType] IN (" + SelecctedWitsList + ") And [System.State] IN (" + DoneStates + ") AND [System.ChangedDate] > '" + FirstDate.toDateString() + "'"}; // Add last update is smaller then smalest date
     WitsList = await WIClient.queryByWiql(CloseddWiql, Project.name,Team.name);
     WitsList.workItems.forEach(wit => {        
-        if (IdList.length==50)
+        if (IdList.length==MaxCallIds)
         {
             IdLists.push(IdList);
             IdList = [];
@@ -241,40 +365,54 @@ async function GetViewModel1(){
             FullWorkItemList=WorkItemList;
         }
     };   
-    let ViewModel1: ViewModel1 = BuildViewModel(FullWorkItemList);  
+    let ViewModel1: DataModel1 = BuildViewModel(FullWorkItemList);  
     return ViewModel1;
 }
 function BuildViewModel(FullWorkItemList: WorkItem[]){
-    let ViewModel1: ViewModel1; 
+    let ViewModel1: DataModel1 = new DataModel1();
     FullWorkItemList.forEach(async WorkItem => {
-        let revisions: WorkItem[] = await WIClient.getRevisions(WorkItem.id,null,null,WorkItemExpand.Fields);
         let FolowState = 0; // 0 - new / 1 - commited / 2 - on going / 3 - done /
-        let IterationValue: String;
+        let WorkItemIterationValue: string;
+        let ChangeToCommit: Date;
+        let revisions: WorkItem[] = await WIClient.getRevisions(WorkItem.id,null,null,WorkItemExpand.Fields);
         revisions.forEach(revision => {
-            if (FolowState == 0){
-                IterationValue = revisions[0].fields["System.ItterationPath"];
-                if (Commited == revision.fields["System.State"]){
-                    // changed to appeoved => mean planed
-                    // check if date in the view -> add to planed by itteration path
-                    // set the itterationValue to the approved itterarion path
+            let RevIterationValue: string = revision.fields["System.IterationPath"];
+            let RevChangedDate :Date = revision.fields["System.ChangedDate"]; 
+            let RevState = revision.fields["System.State"]; 
+            if (FolowState == 0){                          
+                if (RevState == Commited){ // changed to appeoved => mean planed
+                    ChangeToCommit = RevChangedDate;                  
+                    RevisionAnalyze(ViewModel1,RevState,RevIterationValue,SpotLocation.Planed,revision.id,revision.fields["System.Title"]);                                                    
                     FolowState = 1;
+                    WorkItemIterationValue = RevIterationValue;
                 }
             }
             else if (FolowState == 1){
-                if (IterationValue != revision.fields["System.ItterationPath"]){
-                    // add to pospone by itteration
+                if (WorkItemIterationValue != RevIterationValue){
+                    if (false){ // check if the change made in one day or previuse itteration
+                        // remove from last show
+                        // add to new planed
+                    }
+                    else{
+                        // add pospone to itteration
+                    }
                 }
-                else if (OnGoing == revision.fields["System.State"]){
-                    FolowState = 2;
+                else{
+                    OnGoing.forEach(Going => {
+                        if (RevState == Going){
+                            // update the value to on going
+                            FolowState = 2;
+                        }
+                    })
                 }
             } 
             else if (FolowState == 2){
-                if (IterationValue != revision.fields["System.ItterationPath"]){
+                if (WorkItemIterationValue != RevIterationValue){
                     // add to pospone by itteration
                 }
                 else {
                     EndStates.forEach(Done => {
-                        if (Done == revision.fields["System.State"]){
+                        if (RevState == Done){
                             FolowState = 3;
                         }
                     });                
@@ -287,7 +425,158 @@ function BuildViewModel(FullWorkItemList: WorkItem[]){
     });
     return ViewModel1;
 }
-async function ShowViewModel1(ViewModel1: ViewModel1){
+function RevisionAnalyze(ViewModel1: DataModel1,RevState: string,IterationValue:string,SptLocation:SpotLocation,WitId:number,WitTitle:string){
+    let Spot:Spot = null; 
+    let SptState:SpotState;
+    let itter: TeamSettingsIteration;
+    AllItterations.forEach(Itteration => {
+        if (Itteration.path==IterationValue)
+        {
+            itter=Itteration;
+        }
+    }); 
+    if(SptLocation == SpotLocation.PostPoned){
+        SptState = SpotState.Postponed;
+    }
+    else if (SptLocation == SpotLocation.Planed){
+        if (RevState == Commited){ 
+            Spot = {
+                SpotLocation:SpotLocation.Planed,
+                SpotState:SpotState.New,
+                Itteration:itter,
+                WitId:WitId,
+                WitTitle:WitTitle
+            } 
+            ViewModel1.NewSpot(Spot);
+        }
+        else if (OnGoing.indexOf(RevState)>-1){
+            SptState = SpotState.OnGoing;
+        }
+        else if (EndStates.indexOf(RevState)>-1){
+            SptState = SpotState.Closed;
+        } 
+        else{ // cancled
+            SptState = SpotState.Cancle;
+        }
+    } 
+}
+async function ShowViewModels1(DataModel1: DataModel1){
+    let container = $("#ViewContainer");
+    let $Table = $("<table />");
+    container.append($Table);
+    let $Tr = $("<tr />"); 
+    DataModel1.ItterationData.forEach(ItterationData => {
+        let $td = $("<td />");       
+        $Tr.append($td);
+        ShowViewModel1(ItterationData,$td);
+    });
+    $Table.append($Tr);
+}
+function Colorize() {
+    let colorPass: ColorEntry = {
+        backgroundColor: 'Green',
+        value: 'Passed'
+    }
+    let colorFailed: ColorEntry = {
+        backgroundColor: 'Red',
+        value: 'Failed'
+    }
+    let colorNotRun: ColorEntry = {
+        backgroundColor: 'Gray',
+        value: 'Not Run'
+    }
+    let colorInProgress: ColorEntry = {
+        backgroundColor: 'Blue',
+        value: 'In Progress'
+    }
+    let colorInNotApplicable: ColorEntry = {
+        backgroundColor: 'Yellow',
+        value: 'Not Applicable'
+    }
+    let colors: Array<ColorEntry> = new Array<ColorEntry>();
+    colors.push(colorPass);
+    colors.push(colorFailed);
+    colors.push(colorNotRun);
+    colors.push(colorInProgress);
+    colors.push(colorInNotApplicable);
+    let colorize: ColorCustomizationOptions = {
+        customColors: colors
+    }
+    return colorize;
+}
+function ShowViewModel1(ItterationData: ItterationData1,$td: JQuery){ 
+    let legendd:LegendOptions = { 
+        enabled: false 
+    }
+    let hostOption: ChartHostOptions = {
+        height: 250,
+        width: 200
+    }  
+    let series = [];
+    series.push({
+        name: "Done",
+        data: [
+            [1,5],
+            [2,2]
+        ]
+    }); 
+    series.push({
+        name: "In Progress",
+        data: [
+            [1,1],
+            [2,2]
+        ]
+    });
+    series.push({
+        name: "Pospone",
+        data: [
+            [1,2],
+            [2,3]
+        ]
+    });
+    let toolTipOption: TooltipOptions = {
+        enabled: true,
+        onlyShowFocusedSeries: false        
+    }
+    let labels = [
+        "",
+        "Posponed",
+        "Planed",
+        ""
+    ]
+    let chartStackedColumnOptions: CommonChartOptions = {   
+        title: "Try",
+        hostOptions: hostOption,
+        tooltip: toolTipOption,
+        //"chartType": CharType,
+        chartType: ChartTypesConstants.StackedColumn,
+        colorCustomizationOptions: Colorize(),
+        xAxis: { 
+            canZoom: true,
+            labelsEnabled: true,  
+            suppressLabelTruncation: true,
+            labelValues: labels,
+            renderToEdges: true
+        },
+        yAxis: { 
+            canZoom: true,
+            labelsEnabled: true,  
+            suppressLabelTruncation: true,
+            renderToEdges: true
+        }, 
+        legend: legendd,
+        //"suppressMargin": true,
+        //"specializedOptions": hybridChartOptions,
+        series: series,
+        click: (clickeEvent: ClickEvent) => {
+            DrillDown1();
+        },
+    }
+    Services.ChartsService.getService().then((chartService) => {
+        chartService.createChart($td, chartStackedColumnOptions);
+    });
+}
+function DrillDown1(){
 
 }
 //const options = { day: 'numeric', month: 'numeric', year: 'numeric' };

@@ -1,12 +1,19 @@
 import { async } from "q";
 import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers");
-import { WorkItemStateColor } from "TFS/WorkItemTracking/Contracts";
+import { WorkItemClassificationNode, WorkItemStateColor } from "TFS/WorkItemTracking/Contracts";
 import WorkItemClient = require("TFS/WorkItemTracking/RestClient");
+import CoreClient = require("TFS/Core/RestClient");
+import WorkClient = require("TFS/Work/RestClient");
+import { TeamContext } from "TFS/Core/Contracts";
 
 let WIClient = WorkItemClient.getClient();
+let WClient = WorkClient.getClient();
+let CClient = CoreClient.getClient();  
 let ProjectName = VSS.getWebContext().project.name;
+let MyTeamContext: TeamContext;
 let WidgetConfigurationContext: any;
 let WorkItems: string[] = [];
+let AreaPathList: WorkItemClassificationNode[]= [];
 let EndStateList: string[] = [];
 let OnGoingStateList: string[] = [];
 let CommitState:string="";
@@ -15,6 +22,7 @@ export class Settings{
     monthsBack: number;
     monthsForword: number;
     workItems: string[];
+    areaPaths: string[];
     endStateList:string[];
     onGoingStateList:string[];
     commitState: string;
@@ -26,6 +34,14 @@ VSS.register("ChartViewsWidget.Configuration", function () {
     let $CommitState = $("#CommitState");
     let $OnGoingStateList = $("#OnGoingStateList");
     let $EndStateList = $("#EndStateList");
+    let $WitsList = $("#WitsList");
+    let $AreaPaths = $("#AreaPaths");
+    $WitsList.change((eventObject: JQueryEventObject) => {                
+        UpdateConfigurations();
+    });
+    $AreaPaths.change((eventObject: JQueryEventObject) => {                
+        UpdateConfigurations();
+    });
     $MonthsForword.change((eventObject: JQueryEventObject) => {                
         UpdateConfigurations();
     });
@@ -68,10 +84,11 @@ VSS.register("ChartViewsWidget.Configuration", function () {
                     mode: $SeletMode.val(),
                     monthsBack: $MonthsBack.val(),
                     monthsForword: $MonthsForword.val(),
+                    commitState: $CommitState.val(),
                     workItems: WorkItems,
                     endStateList: EndStateList,
-                    onGoingStateList: OnGoingStateList,
-                    commitState: $CommitState.val()
+                    onGoingStateList: OnGoingStateList,                    
+                    areaPaths: AreaPathList
                 })
             };
             return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
@@ -105,6 +122,12 @@ function SetTheView(settings: Settings) {
     OnGoingStateList.forEach(OnGoingState => {
         $("#" + OnGoingState + "-ongoing-checkbox").attr('checked','true'); 
     });
+
+    // AreaPathList = settings.areaPaths;
+    // AreaPathList.forEach(AreaPath => {
+    //     $("#" + AreaPath + "-area-checkbox").attr('checked','true'); 
+    // });
+
     VSS.resize();
 }
 function UpdateConfigurations() {
@@ -117,10 +140,11 @@ function UpdateConfigurations() {
             mode:  $SeletMode.val(),
             monthsBack: $MonthsBack.val(),
             monthsForword: $MonthsForword.val(),
+            commitState: $CommitState.val(),
             workItems: WorkItems,
             endStateList: EndStateList,
             onGoingStateList: OnGoingStateList,
-            commitState: $CommitState.val()
+            areaPaths: AreaPathList
         })
     };
     let eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
@@ -131,6 +155,7 @@ function UpdateConfigurations() {
 async function GetAlWits(){
     let StateList: string[] = [];
     let Wits = $("#WitsList");
+    let AreaPaths = $("#AreaPaths");
     let EndStateListChecks = $("#EndStateList");
     let OnGoingStateListChecks = $("#OnGoingStateList");
     let CommitState = $("#CommitState");    
@@ -197,5 +222,8 @@ async function GetAlWits(){
             CommitState.append(new Option(state));
             VSS.resize();          
         });
+    })
+    await WIClient.getClassificationNodes(ProjectName,[4],10).then((Nodes)=>{  // 4-area /// 1-itteration
+        AreaPathList = Nodes;
     })
 } 
