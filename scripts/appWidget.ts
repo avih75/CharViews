@@ -167,17 +167,10 @@ async function SetViews(){
         }
 
         case "Mode-2":{
-
-            GetViewModeData2(Project.name,Team.name,MaxCallIds,FirstDate,DoneStates,SelecctedWitsList).then((FullWorkItemList)=>{
-
-                let ViewModel2: DataModel2 = BuildViewModel2(AllItterations,FullWorkItemList,Commited,EndStates);  
-
-                return ViewModel2;
-
-            }).then((ViewModel2)=>ShowViewMode2(ViewModel2,$container));
-
+            GetViewModeData2(Project.name,Team.name,MaxCallIds,FirstDate,DoneStates,SelecctedWitsList).then((FullWorkItemList)=>
+                BuildViewModel2(AllItterations,FullWorkItemList,Commited,EndStates).then((ViewModel2: DataModel2)=>
+                ShowViewMode2(ViewModel2,$container)));    
             return;
-
         }
 
         case "Mode-3":{

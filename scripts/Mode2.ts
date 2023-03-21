@@ -11,27 +11,20 @@ import { TeamSettingsIteration } from "azure-devops-node-api/interfaces/WorkInte
 import { StateModel, Colorize} from "./Common";
 
 import { BarModel } from "./Mode1";
+import { async } from "q";
 
  
 
 let WIClient = WorkItemClient.getClient();
 
 export enum Planing{
-
     Posponed,
-
     Planed    
-
 }
-
 export enum States{
-
     New,
-
     Commited,
-
     Closed
-
 }
 
 export async function GetViewModeData2(ProjectName: string,TeamName: string, MaxCallIds:number,FirstDate:Date,DoneStates: string,SelecctedWitsList: string){
@@ -85,7 +78,6 @@ export async function GetViewModeData2(ProjectName: string,TeamName: string, Max
     return FullWorkItemList;
 
 }
-
 export class DataModel2 {
 
     Title: string;
@@ -142,150 +134,82 @@ export class DataModel2 {
 
 }
 
-export class TwinsBars {
-
+export class TwinsBars {    
     id: string;                 // sprint ID
-
     startTime: Date;            // start time
-
     endTime: Date;              // end time
-
     name: string;               // sprint name
-
     path: string;               // sprint path
-
-    url: string;                //
-
- 
-
+    url: string;                // 
     Planing: PlaningBar;
-
     States: StatesBar;
-
     constructor(Itteration: TeamSettingsIteration){
-
         this.Planing = new PlaningBar();
-
         this.States = new StatesBar();
-
         this.id = Itteration.id;                 // sprint ID
-
         this.startTime = Itteration.attributes.startDate;            // start time
-
         this.endTime= Itteration.attributes.finishDate;             // end time
-
         this.name= Itteration.name;               // sprint name
-
         this.path= Itteration.path;               // sprint path
-
         this.url= Itteration.url;                 //
-
     }
-
     AddNew(State:States,Plan:Planing){
-
         this.Planing.AddPlan(Plan);
-
         this.States.AddState(State);
-
     }
-
     Update(NewState:States){
-
         this.States.UpdateState(NewState);
-
     }
-
 }
-
 export class PlaningBar {
-
     Planed: number;
-
     Posponed :number;
-
     constructor(){
-
         this.Posponed = 0;
-
         this.Planed = 0;
-
     }
-
     AddPlan(Plan:Planing){
-
         if (Plan==Planing.Planed){
-
             this.Planed+=1;
-
         }
-
         else{
-
             this.Posponed+=1;
-
         }
-
     }
-
 }
 
 export class StatesBar {
-
     Closed: number;
-
-    Posponed :number;
-
+    UnClosed :number;
     constructor(){
-
-        this.Posponed = 0;
-
+        this.UnClosed = 0;
         this.Closed = 0;
-
     }
-
     AddState(State: States){
-
         if (State==States.Closed){
-
             this.Closed+=1;
-
         }
-
         else{
-
-            this.Posponed+=1;
-
+            this.UnClosed+=1;
         }
-
     }
-
     UpdateState(NewState: States){
-
         if (NewState==States.Closed){
-
             this.Closed+=1;
-
-            this.Posponed-=1;
-
+            this.UnClosed-=1;
         }
-
         else{
-
-            this.Posponed+=1;
-
+            this.UnClosed+=1;
             this.Closed-=1;
-
         }
-
     }
-
 }
-export function BuildViewModel2(AllItterations: TeamSettingsIteration[],FullWorkItemList: WorkItem[], Commited: string, EndStates: string[]){
+
+export async function BuildViewModel2(AllItterations: TeamSettingsIteration[],FullWorkItemList: WorkItem[], Commited: string, EndStates: string[]){
 
     let ViewModel2: DataModel2 = new DataModel2(AllItterations,"Title");    
-
-    FullWorkItemList.forEach(async WorkItem => {
+    for (const WorkItem of FullWorkItemList) {
+    //FullWorkItemList.forEach(async WorkItem => {
 
         let WitPlaning: Planing = Planing.Planed;
 
@@ -328,31 +252,18 @@ export function BuildViewModel2(AllItterations: TeamSettingsIteration[],FullWork
                 }
 
                 EndStates.forEach(End => {
-
                     if (RevState == End){
-
                         WitStatus = States.Closed;
-
                         ViewModel2.UpdateState(RevIterationValue,WitStatus,WitPlaning);
-
                     }
-
                 })
+            }
+            else if (WitStatus==States.Closed){ 
 
             }
-
-            else if (WitStatus==States.Closed){
-
- 
-
-            }
-
         })
-
-    })
-
+    }///)
     return ViewModel2;
-
 }
 
 export async function ShowViewMode2(DataModel2: DataModel2,Container: JQuery){    
@@ -378,155 +289,72 @@ export async function ShowViewMode2(DataModel2: DataModel2,Container: JQuery){
 }
 
 export function ShowViewModel2(Bar: TwinsBars,$container: JQuery){
-
     let legendd:LegendOptions = {
-
         enabled: false
-
     }
-
     let hostOption: ChartHostOptions = {
-
         height: 250,
-
         width: 200
-
     }  
-
     let series = [];
-
- 
-
     let Planed = {
-
         name: "Planed",
-
-        data: [
-
-            [Bar.Planing.Planed,0]
-
-        ]
-
+        data:[null,Bar.Planing.Planed,null,null]
     }
-
     let Posponed = {
-
-        name: "Posponed",
-
-        data: [
-
-            [Bar.Planing.Posponed,0]
-
-        ]
-
+         name: "Posponed",
+         data: [null,Bar.Planing.Posponed,null,null]
     }
-
     let Commited = {
-
-        name: "Commited",
-
-        data: [
-
-            [0,Bar.States.Posponed]
-
-        ]
-
+         name: "UnClosed",
+         data: [null,null,Bar.States.UnClosed,null]
     }
-
     let Closed = {
-
-        name: "Closed",
-
-        data: [
-
-            [0,Bar.States.Closed]
-
-        ]
-
+         name: "Closed",
+         data: [null,null,Bar.States.Closed,null]
     }
-
     series.push(Planed);
-
     series.push(Posponed);
-
     series.push(Commited);
-
-    series.push(Closed);
-
- 
-
+    series.push(Closed); 
     let toolTipOption: TooltipOptions = {
-
         enabled: true,
-
         onlyShowFocusedSeries: false        
-
     }
-
-    let labels: string[] = []
-
+    let labels: string[] = [];
     let chartStackedColumnOptions: CommonChartOptions = {  
-
         title: Bar.name,
-
         hostOptions: hostOption,
-
         tooltip: toolTipOption,
-
         //"chartType": CharType,
-
         chartType: ChartTypesConstants.StackedColumn,
-
         colorCustomizationOptions: Colorize(),
-
         xAxis: {
-
+            title: Bar.name,
             canZoom: true,
-
             labelsEnabled: true,  
-
             suppressLabelTruncation: true,
-
-            labelValues: labels,
-
-            renderToEdges: true
-
+            //labelValues: labels,
+            renderToEdges: true,
+            labelValues: ["", "Planing", "State", ""]
         },
-
         yAxis: {
-
             canZoom: true,
-
             labelsEnabled: true,  
-
             suppressLabelTruncation: true,
-
             renderToEdges: true
-
         },
-
         legend: legendd,
-
         //"suppressMargin": true,
-
         //"specializedOptions": hybridChartOptions,
-
         series: series,
-
         click: (clickeEvent: ClickEvent) => {
-
             DrillDown2();
-
-        },
-
+        }
     }
-
     Services.ChartsService.getService().then((chartService) => {
-
         chartService.createChart($container, chartStackedColumnOptions);
-
     });
-
 }
 
 export function DrillDown2(){

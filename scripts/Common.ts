@@ -103,56 +103,47 @@ export enum SpotState {
 export function Colorize() {
 
     let colorPass: ColorEntry = {
-
         backgroundColor: 'Green',
-
         value: 'Done'
-
     }
-
+    let colorClosed: ColorEntry = {
+        backgroundColor: 'Green',
+        value: 'Closed'
+    }
     let colorFailed: ColorEntry = {
-
         backgroundColor: 'Red',
-
+        value: 'UnClosed'
+    }
+    let colorPospond: ColorEntry = {
+        backgroundColor: 'Red',
         value: 'Pospone'
-
     }
-
     let colorNotRun: ColorEntry = {
-
         backgroundColor: 'Gray',
-
         value: 'Cancle'
-
     }
-
     let colorInProgress: ColorEntry = {
-
         backgroundColor: 'Blue',
-
         value: 'In Progress'
-
     }
-
+    let colorPlaned: ColorEntry = {
+        backgroundColor: 'Blue',
+        value: 'Planed'
+    }
     let colorInNotApplicable: ColorEntry = {
-
         backgroundColor: 'Yellow',
-
         value: 'Commited'
-
     }
 
     let colors: Array<ColorEntry> = new Array<ColorEntry>();
-
+    colors.push(colorClosed);
     colors.push(colorPass);
-
     colors.push(colorFailed);
-
     colors.push(colorNotRun);
-
     colors.push(colorInProgress);
-
     colors.push(colorInNotApplicable);
+    colors.push(colorPospond);
+    colors.push(colorPlaned);
 
     let colorize: ColorCustomizationOptions = {
 
