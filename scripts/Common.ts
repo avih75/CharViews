@@ -108,15 +108,15 @@ export function Colorize() {
     }
     let colorClosed: ColorEntry = {
         backgroundColor: 'Green',
-        value: 'Closed'
+        value: 'Closed-State'
     }
     let colorFailed: ColorEntry = {
         backgroundColor: 'Red',
-        value: 'UnClosed'
+        value: 'UnClosed-State'
     }
     let colorPospond: ColorEntry = {
-        backgroundColor: 'Red',
-        value: 'Pospone'
+        backgroundColor: 'Yellow',
+        value: 'Posponed-Planing'
     }
     let colorNotRun: ColorEntry = {
         backgroundColor: 'Gray',
@@ -128,13 +128,12 @@ export function Colorize() {
     }
     let colorPlaned: ColorEntry = {
         backgroundColor: 'Blue',
-        value: 'Planed'
-    }
+        value: 'Planed-Planing'
+    } 
     let colorInNotApplicable: ColorEntry = {
-        backgroundColor: 'Yellow',
+        backgroundColor: 'Red',
         value: 'Commited'
-    }
-
+    } 
     let colors: Array<ColorEntry> = new Array<ColorEntry>();
     colors.push(colorClosed);
     colors.push(colorPass);
