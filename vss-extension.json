@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "ChartViews",
-    "version": "1.0.244",
+    "version": "1.0.246",
     "name": "Chart Views Extenshion",
     "scopes": [
         "vso.work",
