@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="en" style="height:100%">
 
 <head>
-    <meta charset="utf-8" />
+    <!-- <meta charset="utf-8" /> -->
     <script src="scripts/VSS.SDK.min.js"></script>
-    <title>Config Action Button</title>
-    <script>
+    <!-- <title>Config Chart View</title> -->
+    <script  type="text/javascript">
         VSS.init({
             explicitNotifyLoaded: true,
             usePlatformScripts: true,
@@ -13,14 +14,73 @@
             configureModuleLoader: true,
             applyTheme: true
         });
-        VSS.require(["scripts/appConfig"], function() {
+        VSS.require(["scripts/ChartViewConfig"], function() {
             VSS.notifyLoadSucceeded();
         });
     </script>
 </head>
 
 <body style="height:100%">
-    <div id="main">
+    <div id="main" style="margin-left: 5;">
+        <h2 style="margin-left: 20;">Chart View Configuration</h2>
+        <div id="widget"style="margin-left: 15;">
+            <h3>Widget Configuration</h3>
+            <table>
+                <tr>
+                    <td>
+                        <label style="font-size: large; color: blue;">Manage Widget Configuration</label>
+                    </td>
+                    <td><label style="font-size: large; color: blue;">      </label></td>
+                    <td>
+                        <label style="font-size: large; color: blue;">Set Configuration</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <textarea id="newConfiguration"></textarea><br>
+                        <input type="button" id="addNew" value="Add Configuration" style="margin-left: 30;"></div><br>
+                        <label style="font-size: medium; color: blue;" for="ConfigList" class="label">Selcet Configuration: </label><br>
+                        <select id="ConfigList" name="ConfigList"></select> <br>                        
+                        <input type="button" id="delete" value="Delete Configuration" style="margin-left: 10;"></div><br>
+                    </td>
+                    <td><label style="font-size: large; color: blue;">      </label></td>
+                    <td>
+                        <div style="margin-left: 5;">
+                            <label style="font-size: medium; color: blue;" for="ProjectList" class="label">Selcet Project: </label>
+                            <select id="ProjectList" name="ProjectList" ></select>
+                        </div>
+                        <div style="margin-left: 5;">
+                            <label style="font-size: medium; color: blue;" for="ModeList" class="label">Selcet Mode: </label>
+                            <select id="ModeList" name="ModeList" >
+                                <option value="Month Wits Chart View">Month Wits Chart View</option>
+                                <option value="Itteration Chart View">Itteration Chart View</option>
+                            </select>
+                        </div>
+                        <div style="margin-left: 10;">                    
+                            <label style="font-size: medium; color: blue;" for="WitList" class="label">Work Item: </label>
+                            <select id="WitList" name="WitList" ></select>
+                            <input type="checkbox" id="WorkItem">
+                        </div>
+                        <div style="margin-left: 20;">                                      
+                            <label style="font-size: medium; color: blue;" for="Commited" class="label">Commited State: </label>
+                            <select id="Commited" name="Commited" ></select><br>
+                            <label style="font-size: medium; color: blue;" class="label">Selcet New: </label>
+                            <div id="New"></div>
+                            <label style="font-size: medium; color: blue;" class="label">Selcet InProgress: </label>
+                            <div id="InProgress"></div>
+                            <label style="font-size: medium; color: blue;" class="label">Selcet Done: </label>
+                            <div id="Done"></div>
+                            <label style="font-size: medium; color: blue;" class="label">Selcet Removed: </label>
+                            <div id="Removed"></div>
+                        </div><br>
+                        <div>           
+                            <input type="button" id="saveWidget" value="Save Configuration" style="margin-left: 30;"><br>
+                            <input type="button" id="resetConfig" value="Reset Configuration" style="margin-left: 10;">
+                        </div>  
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 </body>
 

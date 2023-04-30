@@ -1,74 +1,93 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+
+<html xmlns=http://www.w3.org/1999/xhtml>
+
+ 
 
 <head>
+
     <script src="scripts/VSS.SDK.min.js"></script>
+
     <script type="text/javascript">
+
         VSS.init({
+
             explicitNotifyLoaded: true,
+
             usePlatformStyles: true
+
         });
+
         VSS.require(["scripts/appWidgetConfiguration"], function() {
+
             VSS.notifyLoadSucceeded();
+
         });
+
     </script>
+
 </head>
 
 <body>
-    <div class="container"> 
+
+    <div class="container">
+
         <fieldset>
+
             <div>
-                <label style="font-size: medium; color: blue;" for="ModeList" class="label">Selcet Mode: </label>
-                <select id="ModeList" name="ModeList" >
-                <option value="Mode-1">Mode-1</option>
-                <option value="Mode-2">Mode-2</option>
-                <option value="Mode-3">Mode-3</option>
-                <option value="Mode-4">Mode-4</option>
-                </select> 
-            </div>
-            <div>
-                <label style="font-size: medium; color: blue;">Work Items</label>
-                <div id="WitsList"></div>
-            </div>
-            <div>
-                <label style="font-size: medium; color: blue;">Area Paths:</label>
-                <div id="AreaPaths"></div>
-            </div>
-            <div>
-                <label style="font-size: medium; color: blue;">End States</label>
-                <div id="EndStateList"></div>
-            </div>
-            <div>
-                <label style="font-size: medium; color: blue;">Ongoing States</label>
-                <div id="OnGoingStateList"></div>
-            </div>
-            <div>
-                <label style="font-size: medium; color: blue;" for="CommitState" class="label">Selcet Commit State: </label>
-                <select id="CommitState" name="CommitState" ></select> 
-            </div>
-            <div>
-                <table>
-                    <tr>
-                        <td>
-                            <label style="font-size: medium; color: blue;">Months Back</label>
-                        </td>
-                        <td>
-                            <textarea id="MonthsBack"></textarea>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label style="font-size: medium; color: blue;">Months Forword</label>
-                        </td>
-                        <td>
-                            <textarea id="MonthsForword"></textarea>
-                        </td>
-                    </tr>
-                </table>
+
+                <label style="font-size: medium; color: blue;" for="DataName" class="label">Selcet Configuration: </label>
+
+                <select id="DataName" name="DataName">  
+
+                </select>
+
             </div>
 
+            <div>
+
+                <table>
+
+                    <tr>
+
+                        <td>
+
+                            <label style="font-size: medium; color: blue;">Itteration Back</label>
+
+                        </td>
+
+                        <td>
+
+                            <textarea id="MonthsBack"></textarea>
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td>
+
+                            <label style="font-size: medium; color: blue;">Itteration Forword</label>
+
+                        </td>
+
+                        <td>
+
+                            <textarea id="MonthsForword"></textarea>
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>          
+
         </fieldset>
+
     </div>
+
 </body>
 
 </html>

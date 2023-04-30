@@ -1,95 +1,183 @@
 import WidgetHelpers = require("TFS/Dashboards/WidgetHelpers");
-import WidgetClient = require("TFS/Dashboards/RestClient");
-import WorkItemClient = require("TFS/WorkItemTracking/RestClient");
 import WorkClient = require("TFS/Work/RestClient");
-import CoreClient = require("TFS/Core/RestClient");
-import { TeamContext } from "TFS/Core/Contracts"; 
+import { TeamContext } from "TFS/Core/Contracts";
 import { TeamSettingsIteration } from "azure-devops-node-api/interfaces/WorkInterfaces";
 import { Settings } from "./appWidgetConfiguration";
-import { GetViewModeData1, BuildViewModel1, ShowViewMode1, DataModel1 } from "./Mode1"
-import { GetViewModeData2, BuildViewModel2, ShowViewMode21, DataModel2 } from "./Mode2"
+import { BuildViewICV, ShowViewICV, DataModelICV, GetThinerQueryData } from "./IterationView"
+import { GetMWQueryData, MonthWits ,ShowWitListViewMode} from "./MonthWorkItemView"
+import { RetriveData } from "./storageHelper";
+import { ConfigModel,ModalBuild,MonthTuple,WorkItemModel } from "./Common";  
  
 WidgetHelpers.IncludeWidgetStyles();
-WidgetHelpers.IncludeWidgetConfigurationStyles();
+WidgetHelpers.IncludeWidgetConfigurationStyles(); 
 
 const MaxCallIds:number=200;
-let WClient = WorkClient.getClient();  
+let VMode: ConfigModel;
+let Wits: WorkItemModel[];
+let WClient: WorkClient.WorkHttpClient4_1;
 let Team = VSS.getWebContext().team;
-let Project = VSS.getWebContext().project;
+let Project: ContextIdentifier;
+let DataName: string;
 let MyTeamContext: TeamContext;
-let WidgetSettings:Settings;
-let EndStates: string[]; //= "'Closed','Done','Rejected'";
-let DoneStates: string="";
-let Commited: string; //"Approved";
-let OnGoing: string[];// = "On Going";
-let MaxBack: number = 5;
-let MaxForword: number = 0;
-let SelecctedWitsList: string="";
-let AllItterations: TeamSettingsIteration[]= [];
+let DoneStates: string[];
+let DoneStatesQuery: string="";
+let RemoveStatesQuery: string="";
+let NewStatesQuery:string="";
+let InProgressStates: string[];
+let SelectedWitsList: string="";
+let SelectedItterations: TeamSettingsIteration[];
 let FirstDate:Date;
 let LastDate:Date;
+let TeamAreaPaths:string="";
+let AreaPaths:string[];
+let NewStates:string[];
+let RemovedState:string[];
+let MonthList:MonthTuple[];
+let Title:string="";
+function InitWidget(WidgetSettings: Settings){  
+    Wits=[];
+    DoneStates=[];
+    InProgressStates=[];
+    SelectedItterations=[];
+    NewStates=[];
+    RemovedState=[];
+    DoneStates=[];
+    AreaPaths=[];
+    WClient = WorkClient.getClient();  
+    Project = VSS.getWebContext().project;  
+    if (!WidgetSettings) {  
+        WidgetSettings.itterationBack=0;
+        WidgetSettings.itterationForword=0;
+        WidgetSettings.dataName="";
+    }
+    DataName = WidgetSettings.dataName;
+}
 VSS.register("ChartViewsWidget", function (){
-    let getQueryInfo = function (widgetSettings) {
-        WidgetSettings = JSON.parse(widgetSettings.customSettings.data);
-        let container = $("#ViewContainer");      
-        container.empty();
-        if (!WidgetSettings) {            
-            container.text("Sorry nothing to show, please Check cconfiguration.");
-            return WidgetHelpers.WidgetStatusHelper.Success();
+        let getQueryInfo = function (widgetSettings) {
+            Title=widgetSettings.name;
+            let WidgetSettings:Settings = JSON.parse(widgetSettings.customSettings.data);
+            InitWidget(WidgetSettings);  
+            RetriveData(DataName).then((CMDataRetrived: ConfigModel)=>{
+                if(CMDataRetrived!=null){
+                    VMode=CMDataRetrived;
+                }
+                VMode.ItterationBack = WidgetSettings.itterationBack;
+                VMode.ItterationForward = WidgetSettings.itterationForword;
+                VMode.ProjectName=Project.name;          
+                MyTeamContext = {"project": Project.name,"projectId": Project.id,"team": Team.name,"teamId": Team.id};        
+                if (VMode){
+                    SetViews();                
+                }
+            })            
+            return WidgetHelpers.WidgetStatusHelper.Success();        
         }
-        else {            
-            EndStates = WidgetSettings.endStateList;
-            EndStates.forEach(EndState => {
-                DoneStates = "'" + EndState + "'," + DoneStates;
-            });
-            DoneStates = DoneStates.slice(0, -1);
-            WidgetSettings.workItems.forEach(Wit => {
-                SelecctedWitsList = "'" + Wit + "'," + SelecctedWitsList;
-            });
-            SelecctedWitsList = SelecctedWitsList.slice(0, -1);
-            OnGoing = WidgetSettings.onGoingStateList;
-            Commited = WidgetSettings.commitState;
-            MyTeamContext = {"project": Project.name,"projectId": Project.id,"team": Team.name,"teamId": Team.id};
-            SetViews();      
-            return WidgetHelpers.WidgetStatusHelper.Success();
-        }
-    }
-    return {
-        load: function (widgetSettings) {
-            return getQueryInfo(widgetSettings);
-        },
-        reload: function (widgetSettings) {
-            return getQueryInfo(widgetSettings);
-        }
-    }
+        return {
+            load: function (widgetSettings) {
+                return getQueryInfo(widgetSettings);
+            },
+            reload: function (widgetSettings) {
+                return getQueryInfo(widgetSettings);
+            }
+        }    
 });
 async function SetViews(){
-    AllItterations = await WClient.getTeamIterations(MyTeamContext);
-    AllItterations = SetItterations(AllItterations);
-    let $container = $("#ViewContainer");
-    switch(WidgetSettings.mode){
-        case "Mode-1":{
-            GetViewModeData1(Project.name,Team.name,MaxCallIds,FirstDate,DoneStates,SelecctedWitsList).then((FullWorkItemList)=>{
-                let ViewModel1: DataModel1 = BuildViewModel1(AllItterations,FullWorkItemList,Commited,OnGoing,EndStates);  
-                return ViewModel1;
-            }).then((ViewModel1)=> ShowViewMode1(ViewModel1,$container));
+    await TestAreaPAth();
+    ModalBuild();
+    let container = $("#ViewContainer");
+    container.empty();
+    switch(VMode.ViewMode){
+        case "Month Wits Chart View":{
+            SetInfoMWCV();
+            SetMonths();
+            let FullMonthsWorkItemList:MonthWits[] = await GetMWQueryData(Project.name,Team.name,MaxCallIds,MonthList,TeamAreaPaths,SelectedWitsList,DoneStatesQuery,RemoveStatesQuery);
+            ShowWitListViewMode("Wits","Months",Title,FullMonthsWorkItemList,container);
             return;
         }
-        case "Mode-2":{
-                GetViewModeData2(Project.name,Team.name,MaxCallIds,FirstDate,DoneStates,SelecctedWitsList).then((FullWorkItemList)=>
-                BuildViewModel2(AllItterations,FullWorkItemList,Commited,EndStates).then((ViewModel2: DataModel2)=>
-                ShowViewMode21(ViewModel2,$container)));    
+        case "Itteration Chart View":{
+            SetInfoICV();
+            await SetItterations();
+            let FullWorkItemList = await GetThinerQueryData(Project.name,Team.name,MaxCallIds,FirstDate,TeamAreaPaths,SelectedWitsList,NewStatesQuery);//.then((FullWorkItemList)=>{
+            let ViewModel2: DataModelICV = await BuildViewICV(SelectedItterations,FullWorkItemList,NewStates,InProgressStates,DoneStates,RemovedState,AreaPaths);
+            ViewModel2.Title=Title;
+            ViewModel2.Xasix="Itterations";
+            ViewModel2.Yasix="Wits";
+            ShowViewICV(ViewModel2,container);
             return;
         }
-        case "Mode-3":{
-            return;
-        }
-        case "Mode-4":{
+        case "3":{
             return;
         }
     }
 }
-function SetItterations(AllItterations: TeamSettingsIteration[]){
+function SetInfoMWCV(){
+    VMode.WorkItemList.forEach(Wit => {
+        if(Wit.Enable){
+            Wits.push(Wit);
+            SelectedWitsList = "\"" + Wit.WorkItemName + "\"," + SelectedWitsList;  
+            Wit.WorkItemDone.forEach(DoneState => {
+                DoneStates.push(DoneState);
+                DoneStatesQuery = "\"" + DoneState + "\"," + DoneStatesQuery;
+            });
+            DoneStatesQuery = DoneStatesQuery.slice(0, -1);
+            Wit.WorkItemRemoveStates.forEach(RemoveState=>{
+                RemovedState.push(RemoveState);
+                RemoveStatesQuery = "\"" + RemoveState + "\"," + RemoveStatesQuery;
+            })
+            RemoveStatesQuery = RemoveStatesQuery.slice(0, -1);
+        }
+    });
+    SelectedWitsList = SelectedWitsList.slice(0, -1);
+}
+function SetMonths(){
+    MonthList=[];
+    let TempMonthList:MonthTuple[]=[];
+    let date = new Date();
+    for (let i = 0; i <= VMode.ItterationBack; i++) {
+        let month = date.getMonth()-i;
+        let year = date.getFullYear();
+        while (month<0){
+            month+=12;
+            year--;
+        }
+        let firstDay = new Date(year,month, 1);
+        let lastDay = new Date(year,month+1, 0);
+        if (month==0){
+            month=12;
+            year=year-1
+        }
+        TempMonthList.push({monthName:month+"/"+year,startDate:firstDay,endDate:lastDay});
+    }
+    while (TempMonthList.length>0){
+        MonthList.push(TempMonthList.pop());
+    }
+}
+function SetInfoICV(){
+    VMode.WorkItemList.forEach(Wit => {
+        if(Wit.Enable){
+            Wits.push(Wit);
+            SelectedWitsList = "\"" + Wit.WorkItemName + "\"," + SelectedWitsList;  
+            Wit.WorkItemDone.forEach(DoneState => {
+                DoneStates.push(DoneState);
+                DoneStatesQuery = "\"" + DoneState + "\"," + DoneStatesQuery;
+            });
+            DoneStatesQuery = DoneStatesQuery.slice(0, -1);
+            Wit.WorkItemInProgress.forEach(InProgressState=>{
+                InProgressStates.push(InProgressState);
+            })
+            Wit.WorkItemNewStates.forEach(NewState=>{
+                NewStates.push(NewState);
+                NewStatesQuery = "\"" + NewState + "\"," + NewStatesQuery;
+            })
+            NewStatesQuery = NewStatesQuery.slice(0, -1);
+            Wit.WorkItemRemoveStates.forEach(RemoveState=>{
+                RemovedState.push(RemoveState);
+            })
+        }              
+    });                  
+    SelectedWitsList = SelectedWitsList.slice(0, -1);
+}
+async function SetItterations(){
+    let AllItterations: TeamSettingsIteration[] = await WClient.getTeamIterations(MyTeamContext);
     let HistoryItterations: TeamSettingsIteration[]=[];
     let FeaatureItterations: TeamSettingsIteration[]=[];
     let TempList:TeamSettingsIteration[] = [];
@@ -100,7 +188,7 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
     while(TempList.length>0){
         let Itteration: TeamSettingsIteration = TempList.pop();
         if (Itteration.attributes.timeFrame == 0 ){ // past
-            if (MaxBack>0){
+            if (VMode.ItterationBack>0){
                 HistoryItterations.push(Itteration);
             }
         }
@@ -108,12 +196,12 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
             CurentItteration = Itteration;
         }
         else{ // feature
-            if (MaxForword>0){
+            if (VMode.ItterationForward>0){
                 FeaatureItterations.push(Itteration);
             }
         }
     }    
-    while(HistoryItterations.length>MaxBack){
+    while(HistoryItterations.length>VMode.ItterationBack){
         let Oldest: TeamSettingsIteration = HistoryItterations.pop();
         TempList= [];
         while(HistoryItterations.length>0){
@@ -130,7 +218,7 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
             HistoryItterations.push(TempList.pop());
         }
     }
-    while(FeaatureItterations.length>MaxForword){
+    while(FeaatureItterations.length>VMode.ItterationForward){
         let Newest: TeamSettingsIteration = FeaatureItterations.pop();
         TempList = [];
         while(FeaatureItterations.length>0){
@@ -159,27 +247,40 @@ function SetItterations(AllItterations: TeamSettingsIteration[]){
     else{
         LastDate = CurentItteration.attributes.finishDate;
     }
-    AllItterations=HistoryItterations;
-    AllItterations.push(CurentItteration);
-    AllItterations.concat(FeaatureItterations);
-    return AllItterations;
+    SelectedItterations=HistoryItterations;
+    HistoryItterations.push(CurentItteration);
+    HistoryItterations.concat(FeaatureItterations);
+    return
 }
-function CheckIt(tempIt: TeamSettingsIteration, TempList: TeamSettingsIteration[]){    
-    if (TempList.length==0){
-        TempList.push(tempIt);
+function CheckIt(newItter: TeamSettingsIteration, ItterList: TeamSettingsIteration[]){    
+    if (ItterList.length==0){
+        ItterList.push(newItter);
     }
     else{
-        let path: string[] = tempIt.path.split('\\');
-        let OldPath: string[] =  TempList[0].path.split('\\');
-        if (TempList.length == 1 && path.length < OldPath.length){          
-            TempList.pop();
-            TempList.push(tempIt);        
+        let newPath: string[] = newItter.path.split('\\');
+        let OldPath: string[] =  ItterList[0].path.split('\\');
+        if (ItterList.length == 1 && newPath.length > OldPath.length){          
+            ItterList.pop();
+            ItterList.push(newItter);        
         }
-        else if (path.length == OldPath.length){
-            TempList.push(tempIt);;
+        else if (newPath.length == OldPath.length){
+            ItterList.push(newItter);;
         }
     }
-    return TempList;
+    return ItterList;
 }
-//const options = { day: 'numeric', month: 'numeric', year: 'numeric' };
-//const shortDate = date.toLocaleDateString('en-US', options);
+async function TestAreaPAth(){
+    let TeamFields = await WClient.getTeamFieldValues(MyTeamContext);
+    TeamAreaPaths="";
+    TeamFields.values.forEach(Field =>{
+        let temp = "";
+        Field.value.split('\\').forEach(path=>{
+            temp+=path+'\\';            
+        })
+        //let newVal = Field.value.substring(0,Field.value.length-5);
+        temp = temp.slice(0, -1);
+        AreaPaths.push(temp);
+        TeamAreaPaths = "\"" + temp + "\"," + TeamAreaPaths;
+    })
+    TeamAreaPaths = TeamAreaPaths.slice(0, -1);      
+}

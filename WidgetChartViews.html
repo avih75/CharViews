@@ -1,76 +1,219 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-    
+
+<html xmlns=http://www.w3.org/1999/xhtml>
+
+   
+
 <head>
+
     <script src="scripts/VSS.SDK.min.js"></script>
+
     <script type="text/javascript">
 
+ 
+
         VSS.init({            
+
             explicitNotifyLoaded: true,
+
             usePlatformStyles: true
+
         });
+
         VSS.require(["scripts/appWidget"], function() {
+
             VSS.notifyLoadSucceeded();
+
         });
+
     </script>
-    <!-- <style>
-        .center {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: medium;
-            padding: 5px;
-            color: white;
-        }        
-        .aToButton {
-            background-color: blue;
-            border: 1px solid #CCCCCC;
-        }
-        .multiselect {
-  width: 200px;
-}
 
-.selectBox {
-  position: relative;
-}
+    <style>
 
-.selectBox select {
-  width: 100%;
-  font-weight: bold;
-}
+      .modal-content {
 
-.overSelect {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-}
+        background-color: #fefefe;
 
-#checkboxes {
-  display: none;
-  border: 1px #dadada solid;
-}
+        margin: auto;
 
-#checkboxes label {
-  display: block;
-}
+        padding: 10px;
 
-#checkboxes label:hover {
-  background-color: #1e90ff;
-}
-    </style> -->
+        border: 1px solid #888;
+
+        width: 50%;
+
+        height: auto;
+
+      }
+
+      .modal {
+
+        display: none;
+
+        /* Hidden by default */
+
+        position: fixed;
+
+        /* Stay in place */
+
+        z-index: 1;
+
+        /* Sit on top */
+
+        padding-top: 50px;
+
+        /* Location of the box */
+
+        left: 0;
+
+        top: 0;
+
+        width: 100%;
+
+        /* Full width */
+
+        height: 100%;
+
+        /* Full height */
+
+        overflow: auto;
+
+        /* Enable scroll if needed */
+
+        background-color: rgb(0, 0, 0);
+
+        /* Fallback color */
+
+        background-color: rgba(0, 0, 0, 0.4);
+
+        /* Black w/ opacity */
+
+      }
+
+      /* Modal Content */
+
+      .modal-content {
+
+        background-color: #fefefe;
+
+        margin: auto;
+
+        padding: 10px;
+
+        border: 1px solid #888;
+
+        width: 60%;
+
+        height: auto;
+
+      }
+
+      /* The Close Button */
+
+      .close {
+
+        color: #aaaaaa;
+
+        float: right;
+
+        font-size: 20px;
+
+        font-weight: bold;
+
+      }
+
+      .close:hover,
+
+      .close:focus {
+
+        color: #000;
+
+        text-decoration: none;
+
+        cursor: pointer;
+
+      }
+
+ 
+
+      .Hcell {
+
+        padding: 5px;
+
+        font-size: large;
+
+        color: blue;
+
+      }
+
+ 
+
+      .cell {
+
+        padding: 10px;
+
+        font-size: medium;
+
+        color: black;
+
+      }
+
+ 
+
+      .cell:hover {
+
+        cursor: pointer;
+
+      }
+
+      .tbl {
+
+        padding: 10px;
+
+      }
+
+    </style>
+
 </head>
 
+ 
+
 <body>
+
     <div class="widget">
+
         <fieldset>
+
             <div>
+
                 <h4 class="title" style="margin-left: 15px;">Chart Views</h4>                
+
                 <div id="ViewContainer"></div>
+
             </div>
+
         </fieldset>    
+
     </div>
+
+    <div id="myModal" class="modal">
+
+      <!-- Modal content -->
+
+      <div class="modal-content">
+
+          <span class="close" id="close">&times;</span>
+
+          <h1 id="modalTitle" style="text-align: center;color: gray;"></h1>
+
+          <table id="modalView" class="tbl"></table>
+
+      </div>
+
+  </div>
+
 </body>
+
+ 
 
 </html>
